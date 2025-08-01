@@ -7,13 +7,17 @@ from datetime import datetime
 import re
 from riot_api import RiotAPI
 from vntoolgame_crawler import VnToolGameCrawler
+from thuetoolhay_crawler import ThueToolHayCrawler
+from chothuesub_crawler import ChothuesubCrawler
 
 class CrawlAccLOL:
     def __init__(self):
         self.data_file = "all_accounts.json"
         self.accounts = []
         self.riot_api = None
+        self.chothuesub_crawler = ChothuesubCrawler()
         self.vntoolgame_crawler = VnToolGameCrawler()
+        self.thuetoolhay_crawler = ThueToolHayCrawler()
         self.load_data()
         self.load_api_key()
     
@@ -137,17 +141,18 @@ class CrawlAccLOL:
     
     def show_shop_menu(self):
         """Hiển thị menu lựa chọn shop"""
-        print("\n" + "="*50)
+        print("\n" + "="*60)
         print("CHỌN SHOP ĐỂ CRAWL")
-        print("="*50)
+        print("="*60)
         print("1. ChothuesuB.com")
-        print("2. VnToolGame.com")
-        print("3. Crawl cả 2 shop")
-        print("4. Quay lại menu chính")
-        print("-"*50)
+        print("2. VnToolGame.com") 
+        print("3. ThueToolHay.com")
+        print("4. Crawl cả 3 shop")
+        print("5. Quay lại menu chính")
+        print("-"*60)
         
         while True:
-            choice = input("Nhập lựa chọn của bạn (1-4): ")
+            choice = input("Nhập lựa chọn của bạn (1-5): ")
             
             if choice == '1':
                 self.crawl_chothuesub()
@@ -156,12 +161,15 @@ class CrawlAccLOL:
                 self.crawl_vntoolgame()
                 break
             elif choice == '3':
-                self.crawl_all_shops()
+                self.crawl_thuetoolhay()
                 break
             elif choice == '4':
+                self.crawl_all_shops()
+                break
+            elif choice == '5':
                 break
             else:
-                print("Lựa chọn không hợp lệ! Vui lòng chọn từ 1-4.")
+                print("Lựa chọn không hợp lệ! Vui lòng chọn từ 1-5.")
 
     def crawl_chothuesub(self):
         """Crawl từ chothuesub.com"""
@@ -220,11 +228,32 @@ class CrawlAccLOL:
         print("\nNhấn Enter để quay lại menu...")
         input()
 
+    def crawl_thuetoolhay(self):
+        """Crawl từ thuetoolhay.com"""
+        print("\n" + "="*50)
+        print("BẮT ĐẦU CRAWL DỮ LIỆU TỪ THUETOOLHAY.COM")
+        print("="*50)
+        
+        thuetoolhay_accounts = self.thuetoolhay_crawler.crawl_all_pages()
+        
+        print("-" * 50)
+        print(f"Hoàn thành! Crawl được {len(thuetoolhay_accounts)} tài khoản từ thuetoolhay.com")
+        
+        # Thêm vào danh sách chính
+        self.accounts.extend(thuetoolhay_accounts)
+        
+        # Lưu dữ liệu
+        self.save_data()
+        self.export_to_csv()
+        
+        print("\nNhấn Enter để quay lại menu...")
+        input()
+
     def crawl_all_shops(self):
         """Crawl từ tất cả các shop"""
-        print("\n" + "="*50)
-        print("BẮT ĐẦU CRAWL DỮ LIỆU TỪ TẤT CẢ SHOP")
-        print("="*50)
+        print("\n" + "="*60)
+        print("BẮT ĐẦU CRAWL DỮ LIỆU TỪ TẤT CẢ 3 SHOP")
+        print("="*60)
         
         self.accounts = []  # Reset dữ liệu cũ
         
@@ -255,8 +284,19 @@ class CrawlAccLOL:
         
         print(f"✓ Crawl được {len(vntoolgame_accounts)} tài khoản từ vntoolgame.com")
         
-        print("-" * 50)
-        print(f"Hoàn thành! Tổng cộng crawl được {len(self.accounts)} tài khoản từ tất cả shop")
+        # Delay giữa các shop
+        print("Đợi 3 giây trước khi crawl shop tiếp theo...")
+        time.sleep(3)
+        
+        # Crawl từ thuetoolhay.com
+        print("3. Crawl từ thuetoolhay.com...")
+        thuetoolhay_accounts = self.thuetoolhay_crawler.crawl_all_pages()
+        self.accounts.extend(thuetoolhay_accounts)
+        
+        print(f"✓ Crawl được {len(thuetoolhay_accounts)} tài khoản từ thuetoolhay.com")
+        
+        print("-" * 60)
+        print(f"Hoàn thành! Tổng cộng crawl được {len(self.accounts)} tài khoản từ tất cả 3 shop")
         
         # Lưu dữ liệu
         self.save_data()
@@ -271,8 +311,14 @@ class CrawlAccLOL:
         csv_file = "all_accounts.csv"
         
         if self.accounts:
+            # Lấy tất cả các trường hợp lệ từ tất cả dict trong list
+            all_keys = set()
+            for acc in self.accounts:
+                all_keys.update(acc.keys())
+            fieldnames = list(all_keys)
+            
             with open(csv_file, 'w', encoding='utf-8-sig', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=self.accounts[0].keys())
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(self.accounts)
             print(f"Đã xuất dữ liệu ra file: {csv_file}")
