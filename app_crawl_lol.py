@@ -6,12 +6,14 @@ import os
 from datetime import datetime
 import re
 from riot_api import RiotAPI
+from vntoolgame_crawler import VnToolGameCrawler
 
 class CrawlAccLOL:
     def __init__(self):
-        self.data_file = "chothuesub_accounts.json"
+        self.data_file = "all_accounts.json"
         self.accounts = []
         self.riot_api = None
+        self.vntoolgame_crawler = VnToolGameCrawler()
         self.load_data()
         self.load_api_key()
     
@@ -133,21 +135,51 @@ class CrawlAccLOL:
             print(f"Lỗi không xác định khi crawl trang {page_number}: {e}")
             return []
     
-    def crawl_all_pages(self):
-        """Crawl tất cả các trang"""
+    def show_shop_menu(self):
+        """Hiển thị menu lựa chọn shop"""
         print("\n" + "="*50)
-        print("BẮT ĐẦU CRAWL DỮ LIỆU")
+        print("CHỌN SHOP ĐỂ CRAWL")
+        print("="*50)
+        print("1. ChothuesuB.com")
+        print("2. VnToolGame.com")
+        print("3. Crawl cả 2 shop")
+        print("4. Quay lại menu chính")
+        print("-"*50)
+        
+        while True:
+            choice = input("Nhập lựa chọn của bạn (1-4): ")
+            
+            if choice == '1':
+                self.crawl_chothuesub()
+                break
+            elif choice == '2':
+                self.crawl_vntoolgame()
+                break
+            elif choice == '3':
+                self.crawl_all_shops()
+                break
+            elif choice == '4':
+                break
+            else:
+                print("Lựa chọn không hợp lệ! Vui lòng chọn từ 1-4.")
+
+    def crawl_chothuesub(self):
+        """Crawl từ chothuesub.com"""
+        print("\n" + "="*50)
+        print("BẮT ĐẦU CRAWL DỮ LIỆU TỪ CHOTHUESUB.COM")
         print("="*50)
         
-        self.accounts = []  # Reset dữ liệu cũ
         total_pages = 6
-        
         print(f"Sẽ crawl {total_pages} trang từ chothuesub.com")
         print("-" * 50)
         
+        chothuesub_accounts = []
         for page in range(1, total_pages + 1):
             accounts = self.crawl_page(page)
-            self.accounts.extend(accounts)
+            # Thêm thông tin shop vào mỗi account
+            for acc in accounts:
+                acc['shop'] = 'chothuesub.com'
+            chothuesub_accounts.extend(accounts)
             
             # Delay giữa các request
             if page < total_pages:
@@ -155,12 +187,79 @@ class CrawlAccLOL:
                 time.sleep(2)
         
         print("-" * 50)
-        print(f"Hoàn thành! Tổng cộng crawl được {len(self.accounts)} tài khoản")
+        print(f"Hoàn thành! Crawl được {len(chothuesub_accounts)} tài khoản từ chothuesub.com")
+        
+        # Thêm vào danh sách chính
+        self.accounts.extend(chothuesub_accounts)
         
         # Lưu dữ liệu
         self.save_data()
+        self.export_to_csv()
         
-        # Tạo file CSV
+        print("\nNhấn Enter để quay lại menu...")
+        input()
+
+    def crawl_vntoolgame(self):
+        """Crawl từ vntoolgame.com"""
+        print("\n" + "="*50)
+        print("BẮT ĐẦU CRAWL DỮ LIỆU TỪ VNTOOLGAME.COM")
+        print("="*50)
+        
+        vntoolgame_accounts = self.vntoolgame_crawler.crawl_all_pages()
+        
+        print("-" * 50)
+        print(f"Hoàn thành! Crawl được {len(vntoolgame_accounts)} tài khoản từ vntoolgame.com")
+        
+        # Thêm vào danh sách chính
+        self.accounts.extend(vntoolgame_accounts)
+        
+        # Lưu dữ liệu
+        self.save_data()
+        self.export_to_csv()
+        
+        print("\nNhấn Enter để quay lại menu...")
+        input()
+
+    def crawl_all_shops(self):
+        """Crawl từ tất cả các shop"""
+        print("\n" + "="*50)
+        print("BẮT ĐẦU CRAWL DỮ LIỆU TỪ TẤT CẢ SHOP")
+        print("="*50)
+        
+        self.accounts = []  # Reset dữ liệu cũ
+        
+        # Crawl từ chothuesub.com
+        print("1. Crawl từ chothuesub.com...")
+        total_pages = 6
+        for page in range(1, total_pages + 1):
+            accounts = self.crawl_page(page)
+            # Thêm thông tin shop vào mỗi account
+            for acc in accounts:
+                acc['shop'] = 'chothuesub.com'
+            self.accounts.extend(accounts)
+            
+            if page < total_pages:
+                print(f"Đợi 2 giây trước khi crawl trang tiếp theo...")
+                time.sleep(2)
+        
+        print(f"✓ Crawl được {len([acc for acc in self.accounts if acc.get('shop') == 'chothuesub.com'])} tài khoản từ chothuesub.com")
+        
+        # Delay giữa các shop
+        print("Đợi 3 giây trước khi crawl shop tiếp theo...")
+        time.sleep(3)
+        
+        # Crawl từ vntoolgame.com
+        print("2. Crawl từ vntoolgame.com...")
+        vntoolgame_accounts = self.vntoolgame_crawler.crawl_all_pages()
+        self.accounts.extend(vntoolgame_accounts)
+        
+        print(f"✓ Crawl được {len(vntoolgame_accounts)} tài khoản từ vntoolgame.com")
+        
+        print("-" * 50)
+        print(f"Hoàn thành! Tổng cộng crawl được {len(self.accounts)} tài khoản từ tất cả shop")
+        
+        # Lưu dữ liệu
+        self.save_data()
         self.export_to_csv()
         
         print("\nNhấn Enter để quay lại menu...")
@@ -169,7 +268,7 @@ class CrawlAccLOL:
     def export_to_csv(self):
         """Xuất dữ liệu ra file CSV"""
         import csv
-        csv_file = "chothuesub_accounts.csv"
+        csv_file = "all_accounts.csv"
         
         if self.accounts:
             with open(csv_file, 'w', encoding='utf-8-sig', newline='') as f:
@@ -411,20 +510,28 @@ class CrawlAccLOL:
     def show_menu(self):
         """Hiển thị menu chính"""
         self.clear_screen()
-        print("="*50)
-        print("CHƯƠNG TRÌNH CRAWL TÀI KHOẢN LOL - CHOTHUESUB.COM")
-        print("="*50)
+        print("="*60)
+        print("CHƯƠNG TRÌNH CRAWL TÀI KHOẢN LOL - MULTI SHOP")
+        print("="*60)
         print(f"Dữ liệu hiện tại: {len(self.accounts)} tài khoản")
         if self.accounts:
+            # Thống kê theo shop
+            shop_stats = {}
+            for acc in self.accounts:
+                shop = acc.get('shop', 'Unknown')
+                shop_stats[shop] = shop_stats.get(shop, 0) + 1
+            
+            shop_info = " | ".join([f"{shop}: {count}" for shop, count in shop_stats.items()])
+            print(f"Phân bố: {shop_info}")
             print(f"Lần cập nhật cuối: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-        print("-"*50)
-        print("1. Crawl tài khoản mới")
+        print("-"*60)
+        print("1. Crawl tài khoản mới (chọn shop)")
         print("2. Xem danh sách đã crawl")
         print("3. Sắp xếp theo giá (thấp -> cao)")
         print("4. Cập nhật thời gian trận đấu gần nhất")
         print("5. Xem tài khoản theo thời gian hoạt động")
         print("6. Thoát")
-        print("-"*50)
+        print("-"*60)
     
     def run(self):
         """Chạy ứng dụng"""
@@ -433,7 +540,7 @@ class CrawlAccLOL:
             choice = input("Nhập lựa chọn của bạn (1-6): ")
             
             if choice == '1':
-                self.crawl_all_pages()
+                self.show_shop_menu()
             elif choice == '2':
                 self.view_accounts()
             elif choice == '3':
