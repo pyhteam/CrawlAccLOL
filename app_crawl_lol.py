@@ -177,7 +177,17 @@ class CrawlAccLOL:
         print("BẮT ĐẦU CRAWL DỮ LIỆU TỪ CHOTHUESUB.COM")
         print("="*50)
         
-        total_pages = 6
+        # Nhập số trang từ bàn phím
+        while True:
+            try:
+                total_pages = int(input("Nhập số trang muốn crawl (mặc định 9): ") or "9")
+                if total_pages > 0:
+                    break
+                else:
+                    print("Số trang phải lớn hơn 0!")
+            except ValueError:
+                print("Vui lòng nhập số hợp lệ!")
+        
         print(f"Sẽ crawl {total_pages} trang từ chothuesub.com")
         print("-" * 50)
         
@@ -257,9 +267,20 @@ class CrawlAccLOL:
         
         self.accounts = []  # Reset dữ liệu cũ
         
+        # Nhập số trang cho chothuesub.com
+        print("\n1. Cấu hình cho chothuesub.com")
+        while True:
+            try:
+                total_pages = int(input("Nhập số trang muốn crawl từ chothuesub.com (mặc định 6): ") or "6")
+                if total_pages > 0:
+                    break
+                else:
+                    print("Số trang phải lớn hơn 0!")
+            except ValueError:
+                print("Vui lòng nhập số hợp lệ!")
+        
         # Crawl từ chothuesub.com
-        print("1. Crawl từ chothuesub.com...")
-        total_pages = 6
+        print(f"\nBắt đầu crawl {total_pages} trang từ chothuesub.com...")
         for page in range(1, total_pages + 1):
             accounts = self.crawl_page(page)
             # Thêm thông tin shop vào mỗi account
