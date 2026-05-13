@@ -29,7 +29,7 @@ from qfluentwidgets import (
     SubtitleLabel,
 )
 
-from src.crawlers import ChothuesubCrawler, VnToolGameCrawler, ThueToolHayCrawler
+from src.crawlers import ChothuesubCrawler, VnToolGameCrawler, ThueToolHayCrawler, ShopCTSCrawler
 from src.storage import AccountStorage
 from src.config import AppConfig
 
@@ -102,13 +102,17 @@ class CrawlPage(ScrollArea):
         self.cb_chothuesub.setChecked(True)
         shops_layout.addWidget(self.cb_chothuesub)
 
-        self.cb_vntoolgame = CheckBox("thuetool.com - VnToolGame")
+        self.cb_vntoolgame = CheckBox("thuetool.com - Acc Rác LMHT")
         self.cb_vntoolgame.setChecked(True)
         shops_layout.addWidget(self.cb_vntoolgame)
 
         self.cb_thuetoolhay = CheckBox("thuetoolhay.com - ThueToolHay")
         self.cb_thuetoolhay.setChecked(True)
         shops_layout.addWidget(self.cb_thuetoolhay)
+
+        self.cb_shopcts = CheckBox("shopcts.pro - Acc Rác Liên Minh")
+        self.cb_shopcts.setChecked(True)
+        shops_layout.addWidget(self.cb_shopcts)
 
         self.main_layout.addWidget(shops_card)
 
@@ -208,6 +212,8 @@ class CrawlPage(ScrollArea):
             shops_selected.append("vntoolgame")
         if self.cb_thuetoolhay.isChecked():
             shops_selected.append("thuetoolhay")
+        if self.cb_shopcts.isChecked():
+            shops_selected.append("shopcts")
 
         if not shops_selected:
             InfoBar.warning(
@@ -254,6 +260,8 @@ class CrawlPage(ScrollArea):
                 crawlers.append(VnToolGameCrawler())
             if "thuetoolhay" in shops:
                 crawlers.append(ThueToolHayCrawler())
+            if "shopcts" in shops:
+                crawlers.append(ShopCTSCrawler())
 
             total_steps = len(crawlers) * max_pages
             current_step = 0

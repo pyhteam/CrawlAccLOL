@@ -19,7 +19,7 @@ class VnToolGameCrawler(BaseCrawler):
 
     @property
     def base_url(self) -> str:
-        return "https://thuetool.com/acc-rac-full-thong-tin"
+        return "https://thuetool.com/acc-rac-lmht"
 
     def parse_page(self, html_content: str) -> List[Account]:
         """Parse HTML từ thuetool.com"""
@@ -38,7 +38,9 @@ class VnToolGameCrawler(BaseCrawler):
         """Trích xuất thông tin từ một article element"""
         try:
             # Lấy link chi tiết
-            link_element = article.find("a", class_="link_detail")
+            link_element = article.find("a", class_="more-detail")
+            if not link_element:
+                link_element = article.find("a", href=True)
             link = link_element["href"] if link_element else ""
             if link and not link.startswith("http"):
                 link = f"https://thuetool.com{link}"
@@ -54,40 +56,88 @@ class VnToolGameCrawler(BaseCrawler):
 
             # Lấy account ID
             account_id = ""
-            id_element = article.find("span", class_="more-detail")
+            id_element = article.find("a", class_="more-detail")
             if id_element:
                 id_text = id_element.get_text(strip=True)
                 id_match = re.search(r"#(\d+):", id_text)
                 if id_match:
                     account_id = id_match.group(1)
 
-            # Lấy thông tin chi tiết
-            info_section = article.find("section", class_="info-line font-weight-bold")
+            # Lấy thông tin chi tiết từ product-details section
+            info_section = article.find("div", class_="product-details")
+            if not info_section:
+                info_section = article.find("section", class_="info-line font-weight-bold")
 
             id_game = rank = so_tuong = so_skin = level = ""
 
             if info_section:
-                info_text = info_section.get_text()
+                # Thử parse kiểu mới (div.mb-2 với badge)
+                info_divs = info_section.find_all("div", class_="mb-2")
+                if info_divs:
+                    for div in info_divs:
+                        text = div.get_text(separator=" ", strip=True)
+                        badge = div.find("span", class_="badge")
+                        badge_val = badge.get_text(strip=True) if badge else ""
 
-                ingame_match = re.search(r"✓\s*Ingame:\s*([^\n\r]+)", info_text)
-                if ingame_match:
-                    id_game = ingame_match.group(1).strip()
+                        if "Ingame" in text:
+                            # Ingame value sau dấu ":"
+                            ingame_text = text.split("Ingame")[-1].strip()
+                            ingame_text = re.sub(r"^[:\s✓]+", "", ingame_text).strip()
+                            if badge_val:
+                                id_game = badge_val
+                            elif ingame_text:
+                                id_game = ingame_text
+                        elif "Rank" in text and "Linh" not in text:
+                            rank_text = text.split("Rank")[-1].strip()
+                            rank_text = re.sub(r"^[:\s✓]+", "", rank_text).strip()
+                            if badge_val:
+                                rank = badge_val
+                            elif rank_text:
+                                rank = rank_text
+                        elif "Tướng" in text:
+                            if badge_val:
+                                so_tuong = badge_val
+                            else:
+                                tuong_match = re.search(r"(\d+)", text)
+                                if tuong_match:
+                                    so_tuong = tuong_match.group(1)
+                        elif "Skin" in text:
+                            if badge_val:
+                                so_skin = badge_val
+                            else:
+                                skin_match = re.search(r"(\d+)", text)
+                                if skin_match:
+                                    so_skin = skin_match.group(1)
+                        elif "Level" in text:
+                            if badge_val:
+                                level = badge_val
+                            else:
+                                level_match = re.search(r"(\d+)", text)
+                                if level_match:
+                                    level = level_match.group(1)
+                else:
+                    # Fallback: parse kiểu cũ (text thuần với ✓)
+                    info_text = info_section.get_text()
 
-                rank_match = re.search(r"✓\s*Rank Đơn:\s*([^\n\r]+)", info_text)
-                if rank_match:
-                    rank = rank_match.group(1).strip()
+                    ingame_match = re.search(r"✓\s*Ingame:\s*([^\n\r]+)", info_text)
+                    if ingame_match:
+                        id_game = ingame_match.group(1).strip()
 
-                tuong_match = re.search(r"✓\s*Tướng:\s*([^\n\r]+)", info_text)
-                if tuong_match:
-                    so_tuong = tuong_match.group(1).strip()
+                    rank_match = re.search(r"✓\s*Rank(?:\s*Đơn)?:\s*([^\n\r]+)", info_text)
+                    if rank_match:
+                        rank = rank_match.group(1).strip()
 
-                skin_match = re.search(r"✓\s*Skin:\s*([^\n\r]+)", info_text)
-                if skin_match:
-                    so_skin = skin_match.group(1).strip()
+                    tuong_match = re.search(r"✓\s*Tướng:\s*([^\n\r]+)", info_text)
+                    if tuong_match:
+                        so_tuong = tuong_match.group(1).strip()
 
-                level_match = re.search(r"✓\s*Level:\s*([^\n\r]+)", info_text)
-                if level_match:
-                    level = level_match.group(1).strip()
+                    skin_match = re.search(r"✓\s*Skin:\s*([^\n\r]+)", info_text)
+                    if skin_match:
+                        so_skin = skin_match.group(1).strip()
+
+                    level_match = re.search(r"✓\s*Level:\s*([^\n\r]+)", info_text)
+                    if level_match:
+                        level = level_match.group(1).strip()
 
             return Account(
                 id_game=id_game,
