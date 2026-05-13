@@ -21,6 +21,7 @@ class Account:
     account_id: str = ""
     level: str = ""
     last_match_time: str = ""
+    last_tft_time: str = ""
     last_update: str = ""
 
     def to_dict(self) -> dict:

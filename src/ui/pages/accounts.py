@@ -3,7 +3,8 @@ Accounts Page - Trang quản lý tài khoản với bảng, tìm kiếm, filter
 """
 
 import webbrowser
-from PyQt5.QtCore import Qt, QTimer
+import threading
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -34,6 +35,11 @@ from qfluentwidgets import (
 
 from src.storage import AccountStorage
 from src.models import Account
+from src.riot_api import RiotAPIPool
+from src.config import AppConfig
+from datetime import datetime
+
+
 
 
 class AccountsPage(QWidget):
@@ -86,6 +92,10 @@ class AccountsPage(QWidget):
         header.addStretch()
 
         # Actions
+        self.update_time_btn = PushButton(FluentIcon.STOP_WATCH, "Cập nhật thời gian")
+        self.update_time_btn.clicked.connect(self._update_selected_time)
+        header.addWidget(self.update_time_btn)
+
         self.refresh_btn = PushButton(FluentIcon.SYNC, "Làm mới")
         self.refresh_btn.clicked.connect(self._load_data)
         header.addWidget(self.refresh_btn)
@@ -150,9 +160,9 @@ class AccountsPage(QWidget):
     def _init_table(self, parent_layout):
         """Bảng dữ liệu"""
         self.table = TableWidget(self)
-        self.table.setColumnCount(7)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
-            "STT", "ID Game", "Rank", "Tướng", "Skin", "Giá", "Shop"
+            "STT", "ID Game", "Rank", "Tướng", "Skin", "Giá", "Shop", "LOL", "TFT"
         ])
 
         # Table settings
@@ -170,13 +180,17 @@ class AccountsPage(QWidget):
         header.setSectionResizeMode(4, QHeaderView.Fixed)
         header.setSectionResizeMode(5, QHeaderView.Fixed)
         header.setSectionResizeMode(6, QHeaderView.Fixed)
+        header.setSectionResizeMode(7, QHeaderView.Fixed)
+        header.setSectionResizeMode(8, QHeaderView.Fixed)
 
-        self.table.setColumnWidth(0, 60)
-        self.table.setColumnWidth(2, 120)
-        self.table.setColumnWidth(3, 80)
-        self.table.setColumnWidth(4, 80)
-        self.table.setColumnWidth(5, 120)
-        self.table.setColumnWidth(6, 140)
+        self.table.setColumnWidth(0, 50)
+        self.table.setColumnWidth(2, 100)
+        self.table.setColumnWidth(3, 60)
+        self.table.setColumnWidth(4, 60)
+        self.table.setColumnWidth(5, 110)
+        self.table.setColumnWidth(6, 120)
+        self.table.setColumnWidth(7, 110)
+        self.table.setColumnWidth(8, 110)
 
         # Selection
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -282,6 +296,8 @@ class AccountsPage(QWidget):
             self.table.setItem(row, 4, QTableWidgetItem(acc.so_skin))
             self.table.setItem(row, 5, QTableWidgetItem(acc.gia))
             self.table.setItem(row, 6, QTableWidgetItem(acc.shop))
+            self.table.setItem(row, 7, QTableWidgetItem(acc.last_match_time or "—"))
+            self.table.setItem(row, 8, QTableWidgetItem(acc.last_tft_time or "—"))
 
         # Update info
         total = len(self.accounts)
@@ -373,3 +389,54 @@ class AccountsPage(QWidget):
             parent=self.window(),
         )
 
+    def _update_selected_time(self):
+        """Cập nhật thời gian chơi cho các account đã chọn (hoặc tất cả)"""
+        from src.ui.dialogs.update_time_dialog import UpdateTimeDialog
+
+        # Kiểm tra API pool
+        api_pool = RiotAPIPool.load_from_file()
+        if not api_pool:
+            InfoBar.warning(
+                "Chưa có API Key",
+                "Vui lòng nhập Riot API Key trong trang Cài đặt",
+                duration=4000,
+                position=InfoBarPosition.TOP_RIGHT,
+                parent=self.window(),
+            )
+            return
+
+        # Lấy selected rows
+        selected_rows = set()
+        for item in self.table.selectedItems():
+            selected_rows.add(item.row())
+
+        if selected_rows:
+            accounts_to_update = [
+                self.filtered_accounts[r] for r in sorted(selected_rows)
+                if 0 <= r < len(self.filtered_accounts)
+            ]
+        else:
+            accounts_to_update = [
+                acc for acc in self.filtered_accounts
+                if acc.id_game and "#" in acc.id_game
+            ]
+
+        # Lọc chỉ accounts có Riot ID
+        accounts_to_update = [a for a in accounts_to_update if a.id_game and "#" in a.id_game]
+
+        if not accounts_to_update:
+            InfoBar.warning(
+                "Không có tài khoản hợp lệ",
+                "Cần tài khoản có ID Game dạng 'Name#Tag'",
+                duration=3000,
+                position=InfoBarPosition.TOP_RIGHT,
+                parent=self.window(),
+            )
+            return
+
+        # Mở dialog modal
+        dialog = UpdateTimeDialog(accounts_to_update, api_pool, self.storage, parent=self)
+        dialog.exec_()
+
+        # Reload data sau khi dialog đóng
+        self._load_data()

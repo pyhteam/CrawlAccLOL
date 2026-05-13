@@ -21,6 +21,7 @@ from qfluentwidgets import (
 from src.ui.pages.dashboard import DashboardPage
 from src.ui.pages.accounts import AccountsPage
 from src.ui.pages.crawl import CrawlPage
+from src.ui.pages.update_time import UpdateTimePage
 from src.ui.pages.settings import SettingsPage
 from src import __version__, __app_name__
 
@@ -55,6 +56,7 @@ class MainWindow(FluentWindow):
         self.dashboard_page = DashboardPage(self)
         self.accounts_page = AccountsPage(self)
         self.crawl_page = CrawlPage(self)
+        self.update_time_page = UpdateTimePage(self)
         self.settings_page = SettingsPage(self)
 
     def _init_navigation(self):
@@ -78,6 +80,13 @@ class MainWindow(FluentWindow):
             self.crawl_page,
             FluentIcon.DOWNLOAD,
             "Crawl dữ liệu",
+        )
+
+        # Update time
+        self.addSubInterface(
+            self.update_time_page,
+            FluentIcon.STOP_WATCH,
+            "Cập nhật thời gian",
         )
 
         # Settings (bottom)

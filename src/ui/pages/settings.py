@@ -76,36 +76,49 @@ class SettingsPage(ScrollArea):
 
         # Description
         desc = CaptionLabel(
-            "Nhập Riot API Key để cập nhật thời gian trận đấu gần nhất.\n"
+            "Nhập Riot API Key (mỗi dòng 1 key, nhiều key = tăng tốc cập nhật).\n"
             "Lấy key miễn phí tại: https://developer.riotgames.com/"
         )
         card_layout.addWidget(desc)
 
-        # API Key input
-        key_layout = QHBoxLayout()
-        key_layout.setSpacing(8)
+        # API Keys input (multi-line)
+        from qfluentwidgets import TextEdit
+        self.api_key_input = TextEdit(self.container)
+        self.api_key_input.setPlaceholderText(
+            "Nhập Riot API Key (mỗi dòng 1 key)...\n"
+            "Ví dụ:\n"
+            "RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n"
+            "RGAPI-yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+        )
+        self.api_key_input.setFixedHeight(120)
 
-        self.api_key_input = LineEdit(self.container)
-        self.api_key_input.setPlaceholderText("Nhập Riot API Key...")
-        self.api_key_input.setEchoMode(LineEdit.Password)
-
-        # Load existing key
+        # Load existing keys
         if AppConfig.API_KEY_FILE.exists():
             try:
-                existing_key = AppConfig.API_KEY_FILE.read_text().strip()
-                if existing_key:
-                    self.api_key_input.setText(existing_key)
+                existing_keys = AppConfig.API_KEY_FILE.read_text().strip()
+                if existing_keys:
+                    self.api_key_input.setText(existing_keys)
             except IOError:
                 pass
 
-        key_layout.addWidget(self.api_key_input)
+        card_layout.addWidget(self.api_key_input)
 
-        save_key_btn = PrimaryPushButton(FluentIcon.SAVE, "Lưu Key")
+        # Save button + key count
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(8)
+
+        self.key_count_label = CaptionLabel("")
+        self._update_key_count()
+        btn_layout.addWidget(self.key_count_label)
+
+        btn_layout.addStretch()
+
+        save_key_btn = PrimaryPushButton(FluentIcon.SAVE, "Lưu Keys")
         save_key_btn.setFixedWidth(120)
         save_key_btn.clicked.connect(self._save_api_key)
-        key_layout.addWidget(save_key_btn)
+        btn_layout.addWidget(save_key_btn)
 
-        card_layout.addLayout(key_layout)
+        card_layout.addLayout(btn_layout)
         self.main_layout.addWidget(card)
 
     def _init_crawl_settings(self):
@@ -181,12 +194,26 @@ class SettingsPage(ScrollArea):
         self.main_layout.addWidget(card)
 
     def _save_api_key(self):
-        """Lưu Riot API Key"""
-        key = self.api_key_input.text().strip()
-        if not key:
+        """Lưu Riot API Keys"""
+        text = self.api_key_input.toPlainText().strip()
+        if not text:
             InfoBar.warning(
                 "Chưa nhập key",
-                "Vui lòng nhập Riot API Key",
+                "Vui lòng nhập ít nhất 1 Riot API Key",
+                duration=3000,
+                position=InfoBarPosition.TOP_RIGHT,
+                parent=self.window(),
+            )
+            return
+
+        # Lọc các dòng hợp lệ (bắt đầu bằng RGAPI-)
+        keys = [k.strip() for k in text.splitlines() if k.strip()]
+        valid_keys = [k for k in keys if k.startswith("RGAPI-")]
+
+        if not valid_keys:
+            InfoBar.warning(
+                "Key không hợp lệ",
+                "Key phải bắt đầu bằng 'RGAPI-'",
                 duration=3000,
                 position=InfoBarPosition.TOP_RIGHT,
                 parent=self.window(),
@@ -194,15 +221,32 @@ class SettingsPage(ScrollArea):
             return
 
         AppConfig.ensure_dirs()
-        AppConfig.API_KEY_FILE.write_text(key)
+        AppConfig.API_KEY_FILE.write_text("\n".join(valid_keys))
+        self._update_key_count()
 
         InfoBar.success(
             "Đã lưu",
-            "Riot API Key đã được lưu thành công",
+            f"Đã lưu {len(valid_keys)} API Key(s)",
             duration=3000,
             position=InfoBarPosition.TOP_RIGHT,
             parent=self.window(),
         )
+
+    def _update_key_count(self):
+        """Cập nhật hiển thị số key"""
+        count = 0
+        if AppConfig.API_KEY_FILE.exists():
+            try:
+                content = AppConfig.API_KEY_FILE.read_text().strip()
+                keys = [k for k in content.splitlines() if k.strip().startswith("RGAPI-")]
+                count = len(keys)
+            except IOError:
+                pass
+
+        if count > 0:
+            self.key_count_label.setText(f"🔑 {count} key(s) — tốc độ x{count}")
+        else:
+            self.key_count_label.setText("⚠️ Chưa có key")
 
     def _save_settings(self):
         """Lưu cài đặt crawl"""

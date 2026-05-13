@@ -195,7 +195,7 @@ class CrawlPage(ScrollArea):
         self.log_text.setReadOnly(True)
         self.log_text.setFixedHeight(200)
         self.log_text.setStyleSheet(
-            "TextEdit { font-family: 'Consolas', monospace; font-size: 12px; }"
+            "TextEdit { font-family: 'Consolas', monospace; font-size: 12px; color: #E0E0E0; background-color: #1a1a2e; }"
         )
         self.main_layout.addWidget(self.log_text)
 
