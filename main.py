@@ -26,6 +26,13 @@ from src.config import AppConfig
 
 def main():
     """Entry point chính"""
+    # Set AppUserModelID cho Windows taskbar (hiện icon riêng thay vì Python)
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("SenMS.CrawlAccLOL.2.0")
+    except (ImportError, AttributeError, OSError):
+        pass
+
     # Đảm bảo thư mục data tồn tại
     AppConfig.ensure_dirs()
 
@@ -41,6 +48,12 @@ def main():
 
     app = QApplication(sys.argv)
     app.setFont(QFont("Segoe UI", 10))
+
+    # Set app icon (taskbar + titlebar)
+    from PyQt5.QtGui import QIcon
+    icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icon.png")
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
 
     # Tạo và hiển thị cửa sổ chính
     window = MainWindow()

@@ -108,7 +108,9 @@ pyinstaller --noconfirm ^
     --onefile ^
     --windowed ^
     --name "CrawlAccLOL_v%CURRENT_VERSION%" ^
+    --icon "assets\icon.ico" ^
     --add-data "src;src" ^
+    --add-data "assets;assets" ^
     --hidden-import "PyQt5" ^
     --hidden-import "qfluentwidgets" ^
     --hidden-import "requests" ^

@@ -38,9 +38,11 @@ class SettingsPage(ScrollArea):
         super().__init__(parent)
         self.setObjectName("settingsPage")
         self.setWidgetResizable(True)
+        self.setStyleSheet("QScrollArea { border: none; background: transparent; }")
 
         # Container
         self.container = QWidget()
+        self.container.setStyleSheet("QWidget { background: transparent; }")
         self.setWidget(self.container)
 
         self.main_layout = QVBoxLayout(self.container)
@@ -60,7 +62,6 @@ class SettingsPage(ScrollArea):
         self.main_layout.addWidget(title)
 
         subtitle = CaptionLabel("Cấu hình ứng dụng và Riot API")
-        subtitle.setStyleSheet("color: #888; font-size: 13px;")
         self.main_layout.addWidget(subtitle)
 
     def _init_riot_api(self):
@@ -78,7 +79,6 @@ class SettingsPage(ScrollArea):
             "Nhập Riot API Key để cập nhật thời gian trận đấu gần nhất.\n"
             "Lấy key miễn phí tại: https://developer.riotgames.com/"
         )
-        desc.setStyleSheet("color: #888;")
         card_layout.addWidget(desc)
 
         # API Key input

@@ -2,6 +2,7 @@
 Main Window - Cửa sổ chính với FluentWindow navigation
 """
 
+import os
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
@@ -36,6 +37,11 @@ class MainWindow(FluentWindow):
         # Set theme
         setTheme(Theme.DARK)
         setThemeColor("#0078D4")
+
+        # Set icon
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "assets", "icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
 
         # Khởi tạo các trang
         self._init_pages()

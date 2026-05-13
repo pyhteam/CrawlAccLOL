@@ -61,7 +61,9 @@ class CrawlPage(ScrollArea):
         self.signals.error.connect(self._on_error)
 
         # Container
+        self.setStyleSheet("QScrollArea { border: none; background: transparent; }")
         self.container = QWidget()
+        self.container.setStyleSheet("QWidget { background: transparent; }")
         self.setWidget(self.container)
 
         self.main_layout = QVBoxLayout(self.container)
@@ -84,7 +86,6 @@ class CrawlPage(ScrollArea):
         subtitle = CaptionLabel(
             "Chọn shop và cấu hình để bắt đầu crawl tài khoản LOL"
         )
-        subtitle.setStyleSheet("color: #888; font-size: 13px;")
         self.main_layout.addWidget(subtitle)
 
     def _init_shop_selection(self):
@@ -124,7 +125,6 @@ class CrawlPage(ScrollArea):
         # Số trang
         pages_layout = QVBoxLayout()
         pages_label = CaptionLabel("Số trang mỗi shop")
-        pages_label.setStyleSheet("color: #888;")
         pages_layout.addWidget(pages_label)
 
         self.pages_spin = SpinBox(self.container)
@@ -138,7 +138,6 @@ class CrawlPage(ScrollArea):
         # Mode
         mode_layout = QVBoxLayout()
         mode_label = CaptionLabel("Chế độ lưu")
-        mode_label.setStyleSheet("color: #888;")
         mode_layout.addWidget(mode_label)
 
         self.cb_append = CheckBox("Thêm vào dữ liệu cũ (không trùng)")

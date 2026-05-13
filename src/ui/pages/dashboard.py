@@ -8,19 +8,18 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QGridLayout,
-    QFrame,
 )
 
 from qfluentwidgets import (
     ScrollArea,
     TitleLabel,
     SubtitleLabel,
+    StrongBodyLabel,
     BodyLabel,
     CaptionLabel,
     CardWidget,
     IconWidget,
     FluentIcon,
-    ProgressRing,
 )
 
 from src.storage import AccountStorage
@@ -29,7 +28,7 @@ from src.storage import AccountStorage
 class StatCard(CardWidget):
     """Card thống kê"""
 
-    def __init__(self, icon: FluentIcon, title: str, value: str, subtitle: str = "", parent=None):
+    def __init__(self, icon: FluentIcon, title: str, value: str, parent=None):
         super().__init__(parent)
         self.setFixedHeight(120)
 
@@ -47,27 +46,17 @@ class StatCard(CardWidget):
         text_layout.setSpacing(4)
 
         self.title_label = CaptionLabel(title, self)
-        self.title_label.setStyleSheet("color: #888;")
         text_layout.addWidget(self.title_label)
 
         self.value_label = TitleLabel(value, self)
         text_layout.addWidget(self.value_label)
 
-        if subtitle:
-            self.subtitle_label = CaptionLabel(subtitle, self)
-            self.subtitle_label.setStyleSheet("color: #0078D4;")
-            text_layout.addWidget(self.subtitle_label)
-        else:
-            self.subtitle_label = None
-
         layout.addLayout(text_layout)
         layout.addStretch()
 
-    def update_value(self, value: str, subtitle: str = ""):
+    def update_value(self, value: str):
         """Cập nhật giá trị"""
         self.value_label.setText(value)
-        if self.subtitle_label and subtitle:
-            self.subtitle_label.setText(subtitle)
 
 
 class ShopCard(CardWidget):
@@ -75,7 +64,7 @@ class ShopCard(CardWidget):
 
     def __init__(self, shop_name: str, count: int, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(80)
+        self.setFixedHeight(72)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
@@ -84,20 +73,18 @@ class ShopCard(CardWidget):
         info_layout = QVBoxLayout()
         info_layout.setSpacing(2)
 
-        name_label = BodyLabel(shop_name, self)
-        name_label.setStyleSheet("font-weight: bold;")
+        name_label = StrongBodyLabel(shop_name, self)
         info_layout.addWidget(name_label)
 
         count_label = CaptionLabel(f"{count} tài khoản", self)
-        count_label.setStyleSheet("color: #888;")
         info_layout.addWidget(count_label)
 
         layout.addLayout(info_layout)
         layout.addStretch()
 
         # Count badge
-        badge = SubtitleLabel(str(count), self)
-        badge.setStyleSheet("color: #0078D4; font-weight: bold;")
+        badge = TitleLabel(str(count), self)
+        badge.setStyleSheet("color: #0078D4;")
         layout.addWidget(badge)
 
 
@@ -108,9 +95,11 @@ class DashboardPage(ScrollArea):
         super().__init__(parent)
         self.setObjectName("dashboardPage")
         self.setWidgetResizable(True)
+        self.setStyleSheet("QScrollArea { border: none; background: transparent; }")
 
         # Container
         self.container = QWidget()
+        self.container.setStyleSheet("QWidget { background: transparent; }")
         self.setWidget(self.container)
 
         self.main_layout = QVBoxLayout(self.container)
@@ -139,7 +128,6 @@ class DashboardPage(ScrollArea):
             "Thống kê tổng hợp dữ liệu tài khoản LOL đã crawl",
             self.container,
         )
-        subtitle.setStyleSheet("color: #888; font-size: 13px;")
         header_layout.addWidget(subtitle)
 
         self.main_layout.addLayout(header_layout)

@@ -11,6 +11,9 @@ from PyQt5.QtWidgets import (
     QHeaderView,
     QTableWidgetItem,
     QAbstractItemView,
+    QApplication,
+    QMenu,
+    QAction,
 )
 
 from qfluentwidgets import (
@@ -39,6 +42,7 @@ class AccountsPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("accountsPage")
+        self.setStyleSheet("QWidget#accountsPage { background: transparent; }")
 
         self.storage = AccountStorage()
         self.accounts: list[Account] = []
@@ -76,7 +80,6 @@ class AccountsPage(QWidget):
         title = TitleLabel("🎮 Quản lý tài khoản")
         title_layout.addWidget(title)
         subtitle = CaptionLabel("Tìm kiếm, lọc và quản lý tất cả tài khoản đã crawl")
-        subtitle.setStyleSheet("color: #888; font-size: 13px;")
         title_layout.addWidget(subtitle)
         header.addLayout(title_layout)
 
@@ -88,7 +91,6 @@ class AccountsPage(QWidget):
         header.addWidget(self.refresh_btn)
 
         self.delete_btn = PushButton(FluentIcon.DELETE, "Xóa tất cả")
-        self.delete_btn.setStyleSheet("PushButton { color: #EF5350; }")
         self.delete_btn.clicked.connect(self._confirm_delete_all)
         header.addWidget(self.delete_btn)
 
@@ -182,6 +184,10 @@ class AccountsPage(QWidget):
 
         # Double click to open link
         self.table.doubleClicked.connect(self._on_row_double_click)
+
+        # Context menu (right click)
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._show_context_menu)
 
         parent_layout.addWidget(self.table)
 
@@ -307,3 +313,63 @@ class AccountsPage(QWidget):
         if msg.exec():
             self.storage.clear()
             self._load_data()
+
+    def _show_context_menu(self, pos):
+        """Hiển thị context menu khi right-click"""
+        row = self.table.rowAt(pos.y())
+        if row < 0 or row >= len(self.filtered_accounts):
+            return
+
+        acc = self.filtered_accounts[row]
+
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #2d2d3f;
+                border: 1px solid #3d3d55;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 8px 24px;
+                color: #ffffff;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background-color: #0078D4;
+            }
+        """)
+
+        # Copy ID Game
+        copy_id_action = QAction("📋 Copy ID Game", self)
+        copy_id_action.triggered.connect(lambda: self._copy_to_clipboard(acc.id_game))
+        menu.addAction(copy_id_action)
+
+        # Copy Link
+        if acc.link:
+            copy_link_action = QAction("🔗 Copy Link", self)
+            copy_link_action.triggered.connect(lambda: self._copy_to_clipboard(acc.link))
+            menu.addAction(copy_link_action)
+
+            menu.addSeparator()
+
+            # Open in browser
+            open_link_action = QAction("🌐 Mở trên trình duyệt", self)
+            open_link_action.triggered.connect(lambda: webbrowser.open(acc.link))
+            menu.addAction(open_link_action)
+
+        menu.exec_(self.table.viewport().mapToGlobal(pos))
+
+    def _copy_to_clipboard(self, text: str):
+        """Copy text vào clipboard"""
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+
+        InfoBar.success(
+            "Đã copy",
+            f"Đã copy vào clipboard",
+            duration=2000,
+            position=InfoBarPosition.TOP_RIGHT,
+            parent=self.window(),
+        )
+
