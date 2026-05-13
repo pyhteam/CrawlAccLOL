@@ -51,6 +51,16 @@ class MainWindow(FluentWindow):
         # Center window
         self._center_window()
 
+        # Hiện popup thông tin tác giả khi mở app
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(500, self._show_about_popup)
+
+    def _show_about_popup(self):
+        """Hiện popup thông tin tác giả"""
+        from src.ui.dialogs.about_dialog import AboutDialog
+        dialog = AboutDialog(self)
+        dialog.exec_()
+
     def _init_pages(self):
         """Khởi tạo các trang"""
         self.dashboard_page = DashboardPage(self)

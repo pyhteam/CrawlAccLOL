@@ -169,6 +169,7 @@ class SettingsPage(ScrollArea):
 
     def _init_about(self):
         """About section"""
+        import webbrowser
         section_label = SubtitleLabel("Thông tin")
         self.main_layout.addWidget(section_label)
 
@@ -178,10 +179,10 @@ class SettingsPage(ScrollArea):
         card_layout.setSpacing(8)
 
         info_items = [
-            ("Ứng dụng", "CrawlAccLOL - Tool crawl tài khoản LOL"),
+            ("Ứng dụng", "CutTayToolkit - Tool crawl tài khoản LOL"),
             ("Phiên bản", f"v{__version__}"),
-            ("Framework", "PyQt5 + PyQt-Fluent-Widgets"),
             ("Tác giả", "SenMS"),
+            ("Zalo", "0369962642"),
         ]
 
         for label, value in info_items:
@@ -190,6 +191,22 @@ class SettingsPage(ScrollArea):
             row.addStretch()
             row.addWidget(BodyLabel(value))
             card_layout.addLayout(row)
+
+        # Facebook link (clickable)
+        fb_row = QHBoxLayout()
+        fb_row.addWidget(CaptionLabel("Facebook"))
+        fb_row.addStretch()
+        from qfluentwidgets import HyperlinkLabel
+        fb_link = HyperlinkLabel("facebook.com/senms9x")
+        fb_link.setUrl("https://facebook.com/senms9x")
+        fb_row.addWidget(fb_link)
+        card_layout.addLayout(fb_row)
+
+        # Ad message
+        from qfluentwidgets import StrongBodyLabel
+        ad_label = StrongBodyLabel("💼 Nhận code thuê web, app, tool, game, automation — Liên hệ Sen.")
+        ad_label.setStyleSheet("color: #0078D4; padding-top: 8px;")
+        card_layout.addWidget(ad_label)
 
         self.main_layout.addWidget(card)
 
