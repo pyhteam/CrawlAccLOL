@@ -143,6 +143,8 @@ class AccountsPage(QWidget):
             "Giá: Cao → Thấp",
             "Tướng: Nhiều → Ít",
             "Skin: Nhiều → Ít",
+            "LOL: Gần nhất",
+            "TFT: Gần nhất",
         ])
         self.sort_combo.currentTextChanged.connect(self._on_filter_changed)
         filter_layout.addWidget(self.sort_combo)
@@ -279,9 +281,38 @@ class AccountsPage(QWidget):
             filtered.sort(key=lambda x: x.champions_count, reverse=True)
         elif sort_text == "Skin: Nhiều → Ít":
             filtered.sort(key=lambda x: x.skins_count, reverse=True)
+        elif sort_text == "LOL: Gần nhất":
+            filtered.sort(key=lambda x: self._time_ago_to_days(x.last_match_time))
+        elif sort_text == "TFT: Gần nhất":
+            filtered.sort(key=lambda x: self._time_ago_to_days(x.last_tft_time))
 
         self.filtered_accounts = filtered
         self._render_table()
+
+    @staticmethod
+    def _time_ago_to_days(time_str: str) -> int:
+        """Chuyển 'X thời gian trước' thành số ngày để sort (nhỏ = gần nhất)"""
+        import re
+        if not time_str or time_str in ("—", "Không có", ""):
+            return 99999  # Đẩy xuống cuối
+
+        match = re.search(r"(\d+)", time_str)
+        if not match:
+            return 99999
+
+        num = int(match.group(1))
+
+        if "phút" in time_str:
+            return 0
+        elif "giờ" in time_str:
+            return 0
+        elif "ngày" in time_str:
+            return num
+        elif "tháng" in time_str:
+            return num * 30
+        elif "năm" in time_str:
+            return num * 365
+        return 99999
 
     def _render_table(self):
         """Render dữ liệu vào bảng"""
