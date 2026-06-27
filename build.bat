@@ -8,41 +8,36 @@ echo ║         Build EXE with PyInstaller                      ║
 echo ╚══════════════════════════════════════════════════════════╝
 echo.
 
-:: Đọc version hiện tại
+:: Đọc version hiện tại (delims "== " tách theo = và space, %%~a bỏ quote)
 set "VERSION_FILE=src\__init__.py"
-for /f "tokens=2 delims==" %%a in ('findstr "__version__" %VERSION_FILE%') do (
+for /f "tokens=2 delims== " %%a in ('findstr "__version__" "%VERSION_FILE%"') do (
     set "CURRENT_VERSION=%%~a"
 )
-:: Trim spaces and quotes
-set "CURRENT_VERSION=%CURRENT_VERSION: =%"
-set "CURRENT_VERSION=%CURRENT_VERSION:"=%"
 
-echo [INFO] Version hiện tại: v%CURRENT_VERSION%
+echo [INFO] Version hien tai: v%CURRENT_VERSION%
 echo.
 
 :: Hỏi nâng version
-set /p "UPGRADE_VERSION=Bạn có muốn nâng version không? (y/n): "
+set /p "UPGRADE_VERSION=Ban co muon nang version khong? (y/n): "
 
 if /i "%UPGRADE_VERSION%"=="y" (
     echo.
-    echo  Chọn kiểu nâng version:
-    echo    1. Patch  (x.x.X) - Bug fixes
-    echo    2. Minor  (x.X.0) - New features  
-    echo    3. Major  (X.0.0) - Breaking changes
-    echo    4. Nhập thủ công
+    echo  Chon kieu nang version:
+    echo    1. Patch  ^(x.x.X^) - Bug fixes
+    echo    2. Minor  ^(x.X.0^) - New features
+    echo    3. Major  ^(X.0.0^) - Breaking changes
+    echo    4. Nhap thu cong
     echo.
-    set /p "VERSION_TYPE=Chọn (1-4): "
-    
+    set /p "VERSION_TYPE=Chon (1-4): "
+
     if "!VERSION_TYPE!"=="4" (
-        set /p "NEW_VERSION=Nhập version mới (vd: 2.1.0): "
+        set /p "NEW_VERSION=Nhap version moi (vd: 2.1.0): "
     ) else (
-        :: Parse current version
-        for /f "tokens=1,2,3 delims=." %%a in ("%CURRENT_VERSION%") do (
+        for /f "tokens=1,2,3 delims=." %%a in ("!CURRENT_VERSION!") do (
             set "MAJOR=%%a"
             set "MINOR=%%b"
             set "PATCH=%%c"
         )
-        
         if "!VERSION_TYPE!"=="1" (
             set /a "PATCH=!PATCH!+1"
         ) else if "!VERSION_TYPE!"=="2" (
@@ -53,55 +48,53 @@ if /i "%UPGRADE_VERSION%"=="y" (
             set "MINOR=0"
             set "PATCH=0"
         )
-        
         set "NEW_VERSION=!MAJOR!.!MINOR!.!PATCH!"
     )
-    
+
     echo.
-    echo [INFO] Nâng version: v%CURRENT_VERSION% → v!NEW_VERSION!
-    
-    :: Cập nhật file __init__.py
-    powershell -Command "(Get-Content '%VERSION_FILE%') -replace '__version__ = \".*\"', '__version__ = \"!NEW_VERSION!\"' | Set-Content '%VERSION_FILE%'"
-    
+    echo [INFO] Nang version: v%CURRENT_VERSION% -^> v!NEW_VERSION!
+
+    powershell -NoProfile -Command "(Get-Content '%VERSION_FILE%') -replace '__version__\s*=\s*\".*\"', '__version__ = \"!NEW_VERSION!\"' | Set-Content '%VERSION_FILE%'"
+
     set "CURRENT_VERSION=!NEW_VERSION!"
-    echo [OK] Đã cập nhật version thành v!NEW_VERSION!
+    echo [OK] Da cap nhat version thanh v!NEW_VERSION!
 )
 
 echo.
 echo ══════════════════════════════════════════════════════════
-echo [BUILD] Đang build CrawlAccLOL v%CURRENT_VERSION%...
+echo [BUILD] Dang build CrawlAccLOL v%CURRENT_VERSION%...
 echo ══════════════════════════════════════════════════════════
 echo.
 
 :: Kiểm tra Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python không được tìm thấy! Vui lòng cài đặt Python.
+    echo [ERROR] Python khong duoc tim thay! Vui long cai dat Python.
     pause
     exit /b 1
 )
 
 :: Kiểm tra và cài đặt dependencies
-echo [STEP 1/3] Kiểm tra dependencies...
+echo [STEP 1/3] Kiem tra dependencies...
 pip show pyinstaller >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] Đang cài đặt dependencies...
+    echo [INFO] Dang cai dat dependencies...
     pip install -r requirements.txt
     if errorlevel 1 (
-        echo [ERROR] Không thể cài đặt dependencies!
+        echo [ERROR] Khong the cai dat dependencies!
         pause
         exit /b 1
     )
 )
 
 :: Clean build cũ
-echo [STEP 2/3] Dọn dẹp build cũ...
+echo [STEP 2/3] Don dep build cu...
 if exist "dist" rmdir /s /q "dist"
 if exist "build" rmdir /s /q "build"
 if exist "*.spec" del /q "*.spec"
 
 :: Build với PyInstaller
-echo [STEP 3/3] Đang build EXE...
+echo [STEP 3/3] Dang build EXE...
 echo.
 
 pyinstaller --noconfirm ^
@@ -120,14 +113,14 @@ pyinstaller --noconfirm ^
 
 if errorlevel 1 (
     echo.
-    echo [ERROR] Build thất bại!
+    echo [ERROR] Build that bai!
     pause
     exit /b 1
 )
 
 echo.
 echo ╔══════════════════════════════════════════════════════════╗
-echo ║  ✅ BUILD THÀNH CÔNG!                                   ║
+echo ║  BUILD THANH CONG!                                      ║
 echo ║                                                          ║
 echo ║  File: dist\CrawlAccLOL_v%CURRENT_VERSION%.exe          ║
 echo ║  Version: v%CURRENT_VERSION%                             ║
